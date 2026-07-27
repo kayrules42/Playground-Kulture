@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everyday Lagos — Conversation Card Deck | Playground Kulture</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        /* CSS RESET & BRAND VARIABLES */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        :root {
+            --bg-black: #050505;
+            --bg-white: #ffffff;
+            --bg-light: #F4EFE6; /* Everyday Lagos Signature Cream */
+            --lagos-red: #A81B24;  /* Everyday Lagos Red */
+            --lagos-yellow: #E59828;/* Everyday Lagos Warm Amber */
+            --stripe-purple: #635BFF; /* Official Stripe Accent */
+            --text-main: #111111;
+            --text-muted: #555555;
+            --accent-active: #FF3D7F;
+        }
+
+        body {
+            background-color: var(--bg-white);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* SUCCESS MESSAGE BANNER */
+        .success-banner {
+            display: none; /* Shown dynamically via JS after payment */
+            background-color: #2e7d32;
+            color: #ffffff;
+            text-align: center;
+            padding: 1.2rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            line-height: 1.5;
+        }
+
+        .success-banner p {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* NAVIGATION BAR */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 6%;
+            background-color: var(--bg-black);
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .pk-logo-img {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .brand-text { display: flex; flex-direction: column; }
+
+        .brand-name {
+            font-weight: 800;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .brand-tagline {
+            font-size: 0.65rem;
+            color: var(--accent-active);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 3px;
+        }
+
+        .nav-back-link {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s ease;
+        }
+
+        .nav-back-link:hover { color: var(--accent-active); }
+
+        /* HERO PRODUCT BANNER SECTION */
+        .banner-container {
+            width: 100%;
+            background-color: var(--bg-light);
+            border-bottom: 2px solid rgba(168, 27, 36, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .banner-img {
+            width: 100%;
+            max-width: 1300px;
+            height: auto;
+            display: block;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+        }
+
+        /* MAIN PRODUCT SHOWCASE & ORDER SECTION */
+        .product-main {
+            padding: 5rem 6%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .product-main { grid-template-columns: 1fr; gap: 2.5rem; }
+        }
+
+        .product-gallery {
+            position: sticky;
+            top: 90px;
+        }
+
+        .product-card-preview {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid #eee;
+        }
+
+        .product-card-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .product-details .badge {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: rgba(168, 27, 36, 0.1);
+            color: var(--lagos-red);
+            padding: 5px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .product-details h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1.15;
+            color: #111;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-details .tagline {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--lagos-red);
+            margin-bottom: 1.5rem;
+        }
+
+        .price-tag {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .price-tag .stock-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #2e7d32;
+            background-color: #e8f5e9;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .product-description {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        /* FEATURE HIGHLIGHT LIST */
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .feature-item {
+            background-color: var(--bg-light);
+            padding: 1rem 1.2rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--lagos-red);
+        }
+
+        .feature-item strong {
+            display: block;
+            font-size: 0.95rem;
+            color: #111;
+        }
+
+        .feature-item span {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        /* STRIPE ACTION BUTTONS */
+        .order-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .btn-order-stripe {
+            font-size: 1.05rem;
+            font-weight: 700;
+            padding: 1.1rem;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .btn-canada {
+            background-color: var(--lagos-red);
+            color: #fff;
+            box-shadow: 0 10px 20px rgba(168, 27, 36, 0.25);
+        }
+
+        .btn-canada:hover {
+            background-color: #8c141c;
+            transform: translateY(-2px);
+        }
+
+        .btn-intl {
+            background-color: #111111;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+        }
+
+        .btn-intl:hover {
+            background-color: #2a2a2a;
+            transform: translateY(-2px);
+        }
+
+        /* STYLING FOR STRIPE TEXT BADGE */
+        .payment-trust-icons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #555;
+            margin-top: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .stripe-text-badge {
+            background-color: var(--stripe-purple);
+            color: #ffffff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            text-transform: capitalize;
+        }
+
+        /* FOOTER */
+        footer {
+            background-color: var(--bg-black);
+            color: #aaa;
+            padding: 4rem 6% 2rem;
+            font-size: 0.9rem;
+            margin-top: 5rem;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-socials { display: flex; gap: 1.8rem; list-style: none; }
+        .footer-socials a:hover { color: var(--accent-active); }
+
+        .footer-bottom {
+            text-align: center;
+            border-top: 1px solid #1a1a1a;
+            padding-top: 2rem;
+            font-size: 0.8rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="successBanner" class="success-banner">
+        <p>🎉 <strong>Thank you for your order!</strong> Your payment was successful and your Everyday Lagos card deck will arrive within the next 2 weeks.</p>
+    </div>
+
+    <nav class="navbar">
+        <a href="index.html" class="logo-container">
+            <img src="pk-logo.jpeg" alt="Playground Kulture Logo" class="pk-logo-img">
+            <div class="brand-text">
+                <span class="brand-name">Playground Kulture</span>
+                <span class="brand-tagline">Games • Live Stages • Shows</span>
+            </div>
+        </a>
+        <a href="index.html" class="nav-back-link">← Back to Main Site</a>
+    </nav>
+
+    <section class="banner-container">
+        <img src="everyday-lagos-full-banner.jpeg" alt="Everyday Lagos Conversation Card Deck Banner" class="banner-img">
+    </section>
+
+    <main class="product-main">
+        
+        <div class="product-gallery">
+            <div class="product-card-preview">
+                <img src="everyday-lagos-box.jpeg" alt="Everyday Lagos Conversation Card Deck Box Artwork">
+            </div>
+        </div>
+
+        <div class="product-details">
+            <span class="badge">Playground Kulture Original</span>
+            <h1>Everyday Lagos</h1>
+            <p class="tagline">Conversation Card Deck • Connect. Laugh. Remember.</p>
+
+            <div class="price-tag">
+                $26.99 <span style="font-size: 0.9rem; color: #777; font-weight: 400;">CAD</span>
+                <span class="stock-badge">In Stock & Ready to Ship</span>
+            </div>
+
+            <p class="product-description">
+                A fun, nostalgic conversation game that explores the people, places, experiences, and lingo that make Lagos unforgettable. Perfect for game nights, travel, and gifting.
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-item">
+                    <strong>👥 People</strong>
+                    <span>Lagos culture & icons</span>
+                </div>
+                <div class="feature-item">
+                    <strong>📍 Places</strong>
+                    <span>Landmarks & hidden spots</span>
+                </div>
+                <div class="feature-item">
+                    <strong>⭐ Experiences</strong>
+                    <span>Shared street stories</span>
+                </div>
+                <div class="feature-item">
+                    <strong>💬 Lingo</strong>
+                    <span>Iconic slang & phrases</span>
+                </div>
+            </div>
+
+            <div class="order-actions">
+                <button class="btn-order-stripe btn-canada" onclick="redirectToStripe('canada')">
+                    🇨🇦 Order Deck (Canada Shipping) — $26.99 CAD
+                </button>
+
+                <button class="btn-order-stripe btn-intl" onclick="redirectToStripe('international')">
+                    🌐 Order Deck (International Shipping) — $26.99 CAD
+                </button>
+
+                <div class="payment-trust-icons">
+                    <span>🔒 Guaranteed Safe & Secure Checkout via</span>
+                    <span class="stripe-text-badge">Stripe</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="logo-container">
+                    <img src="pk-logo.jpeg" alt="Playground Kulture Logo" class="pk-logo-img">
+                    <div class="brand-text">
+                        <span class="brand-name" style="color: #fff;">Playground Kulture</span>
+                        <span class="brand-tagline">Games • Live Stages • Shows</span>
+                    </div>
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.85rem; color: #777;">A game. A culture. A connection.</p>
+            </div>
+            <ul class="footer-socials">
+                <li><a href="https://www.instagram.com/playgroundkulture" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                <li><a href="https://www.threads.net/@playgroundkulture" target="_blank" rel="noopener noreferrer">Threads</a></li>
+                <li><a href="mailto:playgroundkulture@yahoo.com">Contact Us</a></li>
+            </ul>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Playground Kulture (PK). All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Live Production Stripe Payment Links
+        const STRIPE_CANADA_LINK = "https://buy.stripe.com/bJecN78ar1c7feP3ti0ZW00";
+        const STRIPE_INTL_LINK   = "https://buy.stripe.com/28EfZjduL3kfc2D5Bq0ZW01";
+
+        // Opens Stripe Checkout in a NEW TAB ('_blank')
+        function redirectToStripe(region) {
+            if (region === 'canada') {
+                window.open(STRIPE_CANADA_LINK, '_blank');
+            } else if (region === 'international') {
+                window.open(STRIPE_INTL_LINK, '_blank');
+            }
+        }
+
+        // Check URL parameters for successful payment redirect (?payment=success)
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('payment') === 'success') {
+                const successBanner = document.getElementById('successBanner');
+                if (successBanner) {
+                    successBanner.style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
